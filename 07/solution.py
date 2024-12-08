@@ -1,7 +1,18 @@
-from itertools import pairwise, product
+from dataclasses import dataclass
+from functools import reduce
+from itertools import product
 from operator import add, mul
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterator
+
+
+@dataclass
+class Memory:
+    ops_iter: Iterator
+
+    def __call__(self, a: int, b: int) -> int:
+        return next(self.ops_iter)(a, b)
+
 
 OPS = [mul, add]
 
@@ -29,25 +40,11 @@ def solve(equations: list[tuple[int, list[int]]], all_ops: list[Callable]) -> in
 
     for res, nums in equations:
         for ops in product(all_ops, repeat=len(nums) - 1):
-            ops_iter = iter(ops)
-
-            # Tried everything to solve this with functools.reduce, but no success :(
-            # Here the hacky solution:
-            cal = 0
-            first = True
-            for a, b in pairwise(nums):
-                o = next(ops_iter)
-                if first:
-                    cal = o(a, b)
-                else:
-                    cal = o(cal, b)
-                first = False
+            cal = reduce(Memory(ops_iter=iter(ops)), nums)
 
             if cal == res:
                 s += cal
-
                 break
-
     return s
 
 
